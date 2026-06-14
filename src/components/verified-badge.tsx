@@ -4,7 +4,10 @@ export function VerifiedBadge({ size = 14, className }: { size?: number; classNa
   return (
     <span
       title="Verified"
-      className={cn("inline-flex items-center justify-center rounded-full brand-gradient text-white shadow-sm ring-1 ring-white/20", className)}
+      className={cn(
+        "inline-flex items-center justify-center rounded-full brand-gradient text-white shadow-sm ring-1 ring-white/20",
+        className,
+      )}
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 24 24" fill="currentColor" width={size * 0.7} height={size * 0.7}>

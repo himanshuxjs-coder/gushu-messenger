@@ -5,7 +5,17 @@ import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
 /** Renders a user avatar by signing the storage path on demand. */
-export function Avatar({ name, url, size = 40, className }: { name: string; url: string | null | undefined; size?: number; className?: string }) {
+export function Avatar({
+  name,
+  url,
+  size = 40,
+  className,
+}: {
+  name: string;
+  url: string | null | undefined;
+  size?: number;
+  className?: string;
+}) {
   const sign = useServerFn(signedAvatarUrl);
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {

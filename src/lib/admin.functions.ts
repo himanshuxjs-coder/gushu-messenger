@@ -24,13 +24,16 @@ export const adminListUsers = createServerFn({ method: "POST" })
 
 export const adminSetVerified = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ userId: z.string().uuid(), verified: z.boolean() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("profiles").update({ verified: data.verified }).eq("id", data.userId);
+    const { error } = await supabaseAdmin
+      .from("profiles")
+      .update({ verified: data.verified })
+      .eq("id", data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -38,17 +41,26 @@ export const adminSetVerified = createServerFn({ method: "POST" })
 export const amIAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    const { data } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
     return { admin: !!data };
   });
 
 /** One-shot: promote demo user "alex" to admin so the admin UI is reachable in the demo. */
 export const promoteFirstAdmin = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ username: z.string().min(1) }).parse(input))
+  .validator((input: unknown) => z.object({ username: z.string().min(1) }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: prof } = await supabaseAdmin.from("profiles").select("id").eq("username", data.username.toLowerCase()).maybeSingle();
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("username", data.username.toLowerCase())
+      .maybeSingle();
     if (!prof) return { ok: false };
-    await supabaseAdmin.from("user_roles").upsert({ user_id: prof.id, role: "admin" }, { onConflict: "user_id,role" });
+    await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: prof.id, role: "admin" }, { onConflict: "user_id,role" });
     return { ok: true };
   });

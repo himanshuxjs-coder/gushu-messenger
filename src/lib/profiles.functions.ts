@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const searchUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ q: z.string().trim().min(1).max(40) }).parse(input))
+  .validator((input: unknown) => z.object({ q: z.string().trim().min(1).max(40) }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const term = data.q.toLowerCase().replace(/[%_]/g, "");
@@ -20,7 +20,9 @@ export const searchUsers = createServerFn({ method: "POST" })
 
 export const getProfileByUsername = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ username: z.string().trim().min(1).max(40) }).parse(input))
+  .validator((input: unknown) =>
+    z.object({ username: z.string().trim().min(1).max(40) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("profiles")
@@ -33,7 +35,7 @@ export const getProfileByUsername = createServerFn({ method: "POST" })
 
 export const updateMyProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         display_name: z.string().trim().max(40).optional(),
@@ -51,13 +53,16 @@ export const updateMyProfile = createServerFn({ method: "POST" })
 export const heartbeat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await context.supabase.from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", context.userId);
+    await context.supabase
+      .from("profiles")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("id", context.userId);
     return { ok: true };
   });
 
 export const signedAvatarUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ path: z.string().min(1).max(300) }).parse(input))
+  .validator((input: unknown) => z.object({ path: z.string().min(1).max(300) }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: signed, error } = await context.supabase.storage
       .from("avatars")

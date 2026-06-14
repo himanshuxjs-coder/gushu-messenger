@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,12 +8,12 @@ import { Logo, Wordmark } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserSearch } from "@/components/user-search";
 import { ConversationList } from "@/components/conversation-list";
-import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { listMyConversations } from "@/lib/conversations.functions";
 import { heartbeat } from "@/lib/profiles.functions";
 import { amIAdmin } from "@/lib/admin.functions";
 import { toast } from "sonner";
+import { cn, debounceInvalidation } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: AppShell,
@@ -27,12 +27,24 @@ function AppShell() {
   const isAdminFn = useServerFn(amIAdmin);
   const [me, setMe] = useState<{ id: string; email: string | null; username: string } | null>(null);
 
+  // Detect if a conversation is active (for mobile layout switching)
+  const params = useParams({ strict: false }) as { conversationId?: string };
+  const hasActiveConversation = !!params.conversationId;
+
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       const u = data.user;
       if (!u) return;
-      const { data: prof } = await supabase.from("profiles").select("username").eq("id", u.id).maybeSingle();
-      setMe({ id: u.id, email: u.email ?? null, username: prof?.username ?? u.email?.split("@")[0] ?? "you" });
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", u.id)
+        .maybeSingle();
+      setMe({
+        id: u.id,
+        email: u.email ?? null,
+        username: prof?.username ?? u.email?.split("@")[0] ?? "you",
+      });
     });
   }, []);
 
@@ -52,20 +64,23 @@ function AppShell() {
     queryFn: () => isAdminFn({ data: undefined as any }),
   });
 
-  // Realtime: invalidate on any messages / conversations change
+  // Realtime: debounce invalidation to prevent stampeding on rapid changes
   useEffect(() => {
     const ch = supabase
       .channel("app-feed")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-        queryClient.invalidateQueries({ queryKey: ["messages"] });
+        debounceInvalidation(queryClient, [["conversations"], ["messages"]]);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "conversations" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        debounceInvalidation(queryClient, [["conversations"]]);
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "conversation_status" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversation_status" },
+        () => {
+          debounceInvalidation(queryClient, [["conversations"]]);
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -87,8 +102,16 @@ function AppShell() {
   }
 
   return (
-    <div className="flex h-screen min-h-0 bg-background text-foreground">
-      <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-sidebar">
+    <div className="flex h-dvh min-h-0 overflow-hidden bg-background text-foreground">
+      {/* Sidebar: full-screen on mobile, fixed 320px on desktop */}
+      <aside
+        className={cn(
+          "flex shrink-0 flex-col border-r border-border bg-sidebar",
+          "w-full md:w-80",
+          // On mobile: show sidebar only when no conversation is active
+          hasActiveConversation ? "hidden md:flex" : "flex",
+        )}
+      >
         <div className="border-b border-border p-5">
           <div className="mb-5 flex items-center justify-between">
             <Link to="/app" className="flex items-center gap-2">
@@ -98,21 +121,27 @@ function AppShell() {
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <Link to="/settings">
-                <Button variant="ghost" size="icon" aria-label="Settings"><SettingsIcon className="size-4" /></Button>
+                <Button variant="ghost" size="icon" aria-label="Settings">
+                  <SettingsIcon className="size-4" />
+                </Button>
               </Link>
               {isAdminQ.data?.admin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon" aria-label="Admin"><Shield className="size-4 text-amber-400" /></Button>
+                  <Button variant="ghost" size="icon" aria-label="Admin">
+                    <Shield className="size-4 text-amber-400" />
+                  </Button>
                 </Link>
               )}
-              <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}><LogOut className="size-4" /></Button>
+              <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}>
+                <LogOut className="size-4" />
+              </Button>
             </div>
           </div>
           <UserSearch />
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto">
-          <ConversationList items={conversations.data ?? []} />
+          <ConversationList items={conversations.data ?? []} loading={conversations.isLoading} />
         </nav>
 
         <div className="border-t border-border bg-sidebar/80 p-4">
@@ -122,16 +151,27 @@ function AppShell() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">@{me?.username ?? "you"}</div>
-              <div className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">Online</div>
+              <div className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+                Online
+              </div>
             </div>
           </div>
           <p className="mt-3 text-center text-[10px] leading-relaxed text-muted-foreground/80">
-            Chats disappear permanently<br />after both participants leave.
+            Chats disappear permanently
+            <br />
+            after both participants leave.
           </p>
         </div>
       </aside>
 
-      <main className="relative flex min-h-0 flex-1 flex-col bg-card">
+      {/* Main chat area: full-screen on mobile when conversation active */}
+      <main
+        className={cn(
+          "relative flex min-h-0 flex-col bg-card",
+          "w-full md:flex-1",
+          hasActiveConversation ? "flex" : "hidden md:flex",
+        )}
+      >
         <Outlet />
       </main>
     </div>

@@ -1,10 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const usernameSchema = z.string().trim().toLowerCase().regex(/^[a-z0-9_]{3,20}$/, "3–20 chars: lowercase letters, numbers, underscore");
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,20}$/, "3–20 chars: lowercase letters, numbers, underscore");
 
 export const resolveUsernameToEmail = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ username: usernameSchema }).parse(input))
+  .validator((input: unknown) => z.object({ username: usernameSchema }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
@@ -19,7 +23,7 @@ export const resolveUsernameToEmail = createServerFn({ method: "POST" })
   });
 
 export const checkUsernameAvailable = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ username: usernameSchema }).parse(input))
+  .validator((input: unknown) => z.object({ username: usernameSchema }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
@@ -34,11 +38,27 @@ export const checkUsernameAvailable = createServerFn({ method: "POST" })
 export const ensureDemoUsers = createServerFn({ method: "POST" }).handler(async () => {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const demos = [
-    { username: "alex", email: "alex@gushu.demo", password: "alex123", display_name: "Alex Chen", bio: "Designer & demo account." },
-    { username: "sophia", email: "sophia@gushu.demo", password: "sophia123", display_name: "Sophia Vane", bio: "Product lead & demo account." },
+    {
+      username: "alex",
+      email: "alex@gushu.demo",
+      password: "alex123",
+      display_name: "Alex Chen",
+      bio: "Designer & demo account.",
+    },
+    {
+      username: "sophia",
+      email: "sophia@gushu.demo",
+      password: "sophia123",
+      display_name: "Sophia Vane",
+      bio: "Product lead & demo account.",
+    },
   ];
   for (const u of demos) {
-    const { data: existing } = await supabaseAdmin.from("profiles").select("id").eq("username", u.username).maybeSingle();
+    const { data: existing } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("username", u.username)
+      .maybeSingle();
     if (existing) continue;
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: u.email,
@@ -48,7 +68,10 @@ export const ensureDemoUsers = createServerFn({ method: "POST" }).handler(async 
     });
     if (error) throw new Error(error.message);
     if (created.user) {
-      await supabaseAdmin.from("profiles").update({ bio: u.bio, verified: true }).eq("id", created.user.id);
+      await supabaseAdmin
+        .from("profiles")
+        .update({ bio: u.bio, verified: true })
+        .eq("id", created.user.id);
     }
   }
   return { ok: true };

@@ -29,14 +29,25 @@ function ResetPasswordPage() {
 
   return (
     <div className="grid min-h-screen place-items-center bg-background px-6">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5 rounded-2xl bg-card p-6 ring-1 ring-border">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-sm space-y-5 rounded-2xl bg-card p-6 ring-1 ring-border"
+      >
         <div className="flex items-center gap-3">
           <Logo size={28} />
           <h1 className="font-display text-2xl">Reset password</h1>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest text-muted-foreground">New password</Label>
-          <Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} minLength={8} required />
+          <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+            New password
+          </Label>
+          <Input
+            type="password"
+            value={pwd}
+            onChange={(e) => setPwd(e.target.value)}
+            minLength={8}
+            required
+          />
         </div>
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Updating…" : "Update password"}

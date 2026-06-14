@@ -6,11 +6,13 @@ const messageKind = z.enum(["text", "image", "video", "file"]);
 
 export const listMessages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("messages")
-      .select("id, conversation_id, sender_id, content, media_path, media_mime, media_name, media_size, message_type, edited, read_at, created_at, updated_at")
+      .select(
+        "id, conversation_id, sender_id, content, media_path, media_mime, media_name, media_size, message_type, edited, read_at, created_at, updated_at",
+      )
       .eq("conversation_id", data.conversationId)
       .order("created_at", { ascending: true })
       .limit(500);
@@ -20,7 +22,7 @@ export const listMessages = createServerFn({ method: "POST" })
 
 export const sendMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         conversationId: z.string().uuid(),
@@ -35,7 +37,9 @@ export const sendMessage = createServerFn({ method: "POST" })
           })
           .optional(),
       })
-      .refine((v) => (v.content && v.content.trim().length > 0) || v.media, { message: "Empty message" })
+      .refine((v) => (v.content && v.content.trim().length > 0) || v.media, {
+        message: "Empty message",
+      })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -60,7 +64,7 @@ export const sendMessage = createServerFn({ method: "POST" })
 
 export const editMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ id: z.string().uuid(), content: z.string().trim().min(1).max(4000) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -75,7 +79,7 @@ export const editMessage = createServerFn({ method: "POST" })
 
 export const markRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ conversationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("messages")
@@ -87,17 +91,22 @@ export const markRead = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const ALLOWED_MIME = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime)|application\/pdf|application\/zip|text\/.*|application\/(msword|vnd\.openxmlformats-officedocument.*))$/;
+const ALLOWED_MIME =
+  /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime)|application\/pdf|application\/zip|text\/.*|application\/(msword|vnd\.openxmlformats-officedocument.*))$/;
 
 export const createMediaUpload = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         conversationId: z.string().uuid(),
         name: z.string().min(1).max(200),
         mime: z.string().min(1).max(120).regex(ALLOWED_MIME, "Unsupported file type"),
-        size: z.number().int().positive().max(25 * 1024 * 1024),
+        size: z
+          .number()
+          .int()
+          .positive()
+          .max(25 * 1024 * 1024),
       })
       .parse(input),
   )
@@ -113,7 +122,7 @@ export const createMediaUpload = createServerFn({ method: "POST" })
 
 export const signedMediaUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ path: z.string().min(1).max(300) }).parse(input))
+  .validator((input: unknown) => z.object({ path: z.string().min(1).max(300) }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: signed, error } = await context.supabase.storage
       .from("chat-media")

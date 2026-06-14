@@ -32,16 +32,29 @@ export function Composer({ conversationId }: { conversationId: string }) {
     setBusy(true);
     try {
       const { path, token } = await createUpload({
-        data: { conversationId, name: file.name, mime: file.type || "application/octet-stream", size: file.size },
+        data: {
+          conversationId,
+          name: file.name,
+          mime: file.type || "application/octet-stream",
+          size: file.size,
+        },
       });
-      const { error } = await supabase.storage.from("chat-media").uploadToSignedUrl(path, token, file, {
-        contentType: file.type || "application/octet-stream",
-      });
+      const { error } = await supabase.storage
+        .from("chat-media")
+        .uploadToSignedUrl(path, token, file, {
+          contentType: file.type || "application/octet-stream",
+        });
       if (error) throw error;
       await send({
         data: {
           conversationId,
-          media: { path, mime: file.type || "application/octet-stream", name: file.name, size: file.size, kind: kindForMime(file.type) },
+          media: {
+            path,
+            mime: file.type || "application/octet-stream",
+            name: file.name,
+            size: file.size,
+            kind: kindForMime(file.type),
+          },
         },
       });
     } catch (e: any) {
@@ -94,7 +107,14 @@ export function Composer({ conversationId }: { conversationId: string }) {
         </div>
       )}
       <div className="relative mx-auto flex max-w-4xl items-end gap-2 rounded-2xl bg-card/80 p-2 ring-1 ring-border backdrop-blur">
-        <Button type="button" size="icon" variant="ghost" onClick={() => fileRef.current?.click()} disabled={busy} aria-label="Attach">
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+          aria-label="Attach"
+        >
           <Paperclip className="size-4" />
         </Button>
         <input
@@ -116,13 +136,24 @@ export function Composer({ conversationId }: { conversationId: string }) {
           className="min-h-0 resize-none border-0 bg-transparent px-2 py-2 text-sm focus-visible:ring-0"
         />
         <div className="relative">
-          <Button type="button" size="icon" variant="ghost" onClick={() => setEmoji((v) => !v)} aria-label="Emoji">
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() => setEmoji((v) => !v)}
+            aria-label="Emoji"
+          >
             <Smile className="size-4" />
           </Button>
           {emoji && (
-            <div className="absolute bottom-12 right-0 z-30">
+            <div className="absolute bottom-12 right-0 z-30 max-[480px]:right-[-60px]">
               <EmojiPicker
-                theme={typeof document !== "undefined" && document.documentElement.classList.contains("dark") ? EmojiTheme.DARK : EmojiTheme.LIGHT}
+                theme={
+                  typeof document !== "undefined" &&
+                  document.documentElement.classList.contains("dark")
+                    ? EmojiTheme.DARK
+                    : EmojiTheme.LIGHT
+                }
                 onEmojiClick={(d) => {
                   setText((t) => t + d.emoji);
                   setEmoji(false);
@@ -131,7 +162,12 @@ export function Composer({ conversationId }: { conversationId: string }) {
             </div>
           )}
         </div>
-        <Button type="button" onClick={submit} disabled={busy || !text.trim()} className={cn("gap-1.5")}>
+        <Button
+          type="button"
+          onClick={submit}
+          disabled={busy || !text.trim()}
+          className={cn("gap-1.5")}
+        >
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           <span className="text-[11px] font-bold uppercase tracking-wider">Send</span>
         </Button>

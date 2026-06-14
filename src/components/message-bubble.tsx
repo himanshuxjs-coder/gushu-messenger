@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, CheckCheck, Edit2, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,15 @@ export type Message = {
   created_at: string;
 };
 
-export function MessageBubble({ m, mine, onEdited }: { m: Message; mine: boolean; onEdited: () => void }) {
+export const MessageBubble = memo(function MessageBubble({
+  m,
+  mine,
+  onEdited,
+}: {
+  m: Message;
+  mine: boolean;
+  onEdited: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(m.content ?? "");
   const save = useServerFn(editMessage);
@@ -65,8 +73,17 @@ export function MessageBubble({ m, mine, onEdited }: { m: Message; mine: boolean
                 className="min-h-0 resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
               />
               <div className="flex gap-2">
-                <Button size="sm" onClick={commit} className="h-7 text-xs">Save</Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7 text-xs">Cancel</Button>
+                <Button size="sm" onClick={commit} className="h-7 text-xs">
+                  Save
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditing(false)}
+                  className="h-7 text-xs"
+                >
+                  Cancel
+                </Button>
               </div>
             </div>
           ) : (
@@ -74,10 +91,20 @@ export function MessageBubble({ m, mine, onEdited }: { m: Message; mine: boolean
           )}
         </div>
       </div>
-      <div className={cn("mt-1.5 flex items-center gap-2 px-1 text-[10px] text-muted-foreground", mine && "flex-row-reverse")}>
+      <div
+        className={cn(
+          "mt-1.5 flex items-center gap-2 px-1 text-[10px] text-muted-foreground",
+          mine && "flex-row-reverse",
+        )}
+      >
         <span>{formatTime(m.created_at)}</span>
         {m.edited && <span className="italic">edited</span>}
-        {mine && (m.read_at ? <CheckCheck className="size-3 text-foreground/70" /> : <Check className="size-3" />)}
+        {mine &&
+          (m.read_at ? (
+            <CheckCheck className="size-3 text-foreground/70" />
+          ) : (
+            <Check className="size-3" />
+          ))}
         {mine && !editing && m.content && (
           <button
             onClick={() => {
@@ -93,7 +120,7 @@ export function MessageBubble({ m, mine, onEdited }: { m: Message; mine: boolean
       </div>
     </div>
   );
-}
+});
 
 function MediaBlock({ m }: { m: Message }) {
   const sign = useServerFn(signedMediaUrl);
@@ -111,15 +138,28 @@ function MediaBlock({ m }: { m: Message }) {
 
   if (m.message_type === "image") {
     return (
-      <a href={url ?? "#"} target="_blank" rel="noreferrer" className="mb-2 block overflow-hidden rounded-xl ring-1 ring-black/10">
-        {url ? <img src={url} alt={m.media_name ?? ""} className="max-h-80 w-full object-cover" /> : <div className="h-40 animate-pulse bg-muted-foreground/10" />}
+      <a
+        href={url ?? "#"}
+        target="_blank"
+        rel="noreferrer"
+        className="mb-2 block overflow-hidden rounded-xl ring-1 ring-black/10"
+      >
+        {url ? (
+          <img src={url} alt={m.media_name ?? ""} className="max-h-80 w-full object-cover" />
+        ) : (
+          <div className="h-40 animate-pulse bg-muted-foreground/10" />
+        )}
       </a>
     );
   }
   if (m.message_type === "video") {
     return (
       <div className="mb-2 overflow-hidden rounded-xl ring-1 ring-black/10">
-        {url ? <video src={url} controls className="max-h-80 w-full" /> : <div className="h-40 animate-pulse bg-muted-foreground/10" />}
+        {url ? (
+          <video src={url} controls className="max-h-80 w-full" />
+        ) : (
+          <div className="h-40 animate-pulse bg-muted-foreground/10" />
+        )}
       </div>
     );
   }
@@ -133,7 +173,9 @@ function MediaBlock({ m }: { m: Message }) {
       <FileText className="size-5 shrink-0" />
       <div className="min-w-0">
         <div className="truncate font-medium">{m.media_name}</div>
-        {m.media_size && <div className="text-[10px] opacity-70">{(m.media_size / 1024).toFixed(0)} KB</div>}
+        {m.media_size && (
+          <div className="text-[10px] opacity-70">{(m.media_size / 1024).toFixed(0)} KB</div>
+        )}
       </div>
     </a>
   );

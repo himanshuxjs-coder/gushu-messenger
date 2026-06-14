@@ -9,7 +9,13 @@ import { VerifiedBadge } from "@/components/verified-badge";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-type R = { id: string; username: string; display_name: string | null; avatar_url: string | null; verified: boolean };
+type R = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  verified: boolean;
+};
 
 export function UserSearch() {
   const [q, setQ] = useState("");
@@ -91,7 +97,9 @@ export function UserSearch() {
               <Avatar name={u.display_name ?? u.username} url={u.avatar_url} size={32} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-medium">{u.display_name ?? u.username}</span>
+                  <span className="truncate text-sm font-medium">
+                    {u.display_name ?? u.username}
+                  </span>
                   {u.verified && <VerifiedBadge size={12} />}
                 </div>
                 <div className="truncate text-[11px] text-muted-foreground">@{u.username}</div>

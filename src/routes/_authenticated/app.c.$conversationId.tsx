@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,8 @@ import { listMessages, markRead } from "@/lib/messages.functions";
 import { ChatHeader } from "@/components/chat-header";
 import { MessageBubble } from "@/components/message-bubble";
 import { Composer } from "@/components/composer";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { debounceInvalidation } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/c/$conversationId")({
   component: ChatPage,
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/_authenticated/app/c/$conversationId")({
 
 function ChatPage() {
   const { conversationId } = Route.useParams();
+  const { user } = Route.useRouteContext();
+  const meId = user.id;
   const getConv = useServerFn(getConversation);
   const listMsgs = useServerFn(listMessages);
   const mark = useServerFn(markRead);
@@ -32,39 +35,45 @@ function ChatPage() {
     queryFn: () => listMsgs({ data: { conversationId } }),
   });
 
-  // Realtime subscription scoped to this conversation
+  // Realtime subscription scoped to this conversation (debounced)
   useEffect(() => {
     const ch = supabase
       .channel(`messages:${conversationId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-        queryClient.invalidateQueries({ queryKey: ["conversations"] });
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          debounceInvalidation(queryClient, [["messages", conversationId], ["conversations"]]);
+        },
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
   }, [conversationId, queryClient]);
 
-  // Mark read on view + invalidate
+  // Mark read on initial load or when new messages arrive
   useEffect(() => {
     if (msgs.data && msgs.data.length) {
-      mark({ data: { conversationId } })
-        .then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }))
-        .catch(() => {});
+      mark({ data: { conversationId } }).catch(() => {});
     }
-  }, [conversationId, msgs.data, mark, queryClient]);
+  }, [conversationId, msgs.data?.length, mark]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [msgs.data]);
+  }, [msgs.data?.length]);
 
-  const [meId, setMeId] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setMeId(data.user?.id ?? null));
-  }, []);
+  const onEdited = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
+    [queryClient, conversationId],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -73,15 +82,29 @@ function ChatPage() {
         other={conv.data?.other ?? null}
         onLeft={() => queryClient.invalidateQueries({ queryKey: ["conversations"] })}
       />
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8 space-y-5">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-6 space-y-5 sm:px-8">
         {msgs.isLoading && (
-          <div className="grid h-full place-items-center text-muted-foreground"><Loader2 className="size-4 animate-spin" /></div>
+          <div className="grid h-full place-items-center text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+          </div>
+        )}
+        {msgs.isError && (
+          <div className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-destructive">
+            <AlertCircle className="size-5" />
+            <p>Failed to load messages</p>
+            <button
+              onClick={() => msgs.refetch()}
+              className="text-xs underline underline-offset-2 hover:no-underline"
+            >
+              Try again
+            </button>
+          </div>
         )}
         {msgs.data?.map((m) => (
-          <MessageBubble key={m.id} m={m as any} mine={m.sender_id === meId} onEdited={() => queryClient.invalidateQueries({ queryKey: ["messages", conversationId] })} />
+          <MessageBubble key={m.id} m={m as any} mine={m.sender_id === meId} onEdited={onEdited} />
         ))}
-        {msgs.data && msgs.data.length === 0 && (
-          <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">
+        {msgs.data && msgs.data.length === 0 && !msgs.isLoading && (
+          <div className="flex h-full min-h-[200px] items-center justify-center text-center text-sm text-muted-foreground">
             <div>
               <p>This is a fresh, private conversation.</p>
               <p className="mt-1 text-xs">Say hello — messages disappear when you both leave.</p>
