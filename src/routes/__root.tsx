@@ -12,7 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import logoUrl from "../assets/Logo_no_bg.png";
 
 function NotFoundComponent() {
@@ -150,7 +150,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <Toaster theme="dark" position="top-center" />
+      <Toaster position="top-center" />
     </QueryClientProvider>
   );
 }

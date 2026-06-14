@@ -8,7 +8,7 @@ import { listMessages, markRead } from "@/lib/messages.functions";
 import { ChatHeader } from "@/components/chat-header";
 import { MessageBubble } from "@/components/message-bubble";
 import { Composer } from "@/components/composer";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader as Loader2, CircleAlert as AlertCircle } from "lucide-react";
 import { debounceInvalidation } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/c/$conversationId")({

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Paperclip, Send, Smile, Loader2 } from "lucide-react";
+import { Paperclip, Send, Smile, Loader as Loader2 } from "lucide-react";
 import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

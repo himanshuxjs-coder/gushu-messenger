@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, CheckCheck, Edit2, FileText, Image as ImageIcon } from "lucide-react";
+import { Check, CheckCheck, CreditCard as Edit2, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { signedMediaUrl, editMessage } from "@/lib/messages.functions";

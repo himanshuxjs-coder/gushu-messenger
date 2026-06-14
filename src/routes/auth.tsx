@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Logo, Wordmark } from "@/components/logo";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader as Loader2, ShieldCheck } from "lucide-react";
 import {
   resolveUsernameToEmail,
   checkUsernameAvailable,

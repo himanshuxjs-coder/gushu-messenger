@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader as Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Logo } from "@/components/logo";
 import { VerifiedBadge } from "@/components/verified-badge";

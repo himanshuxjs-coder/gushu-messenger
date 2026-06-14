@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader as Loader2 } from "lucide-react";
 import { searchUsers } from "@/lib/profiles.functions";
 import { getOrCreateConversation } from "@/lib/conversations.functions";
 import { Avatar } from "@/components/avatar";
