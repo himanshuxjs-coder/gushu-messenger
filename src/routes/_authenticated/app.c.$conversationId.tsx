@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,8 +61,10 @@ function ChatPage() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [msgs.data]);
 
-  const me = supabase.auth.getUser; // placeholder; we'll read via session
-  const [meId, setMeId] = useState();
+  const [meId, setMeId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMeId(data.user?.id ?? null));
+  }, []);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -91,5 +93,3 @@ function ChatPage() {
     </div>
   );
 }
-
-import { useState } from "react";
